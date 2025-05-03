@@ -1,0 +1,4 @@
+django
+pillow
+
+# pip install -r requirements.txt

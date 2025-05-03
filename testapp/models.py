@@ -1,0 +1,111 @@
+from django.db import models
+from django.db.models.signals import post_migrate, post_save
+from django.dispatch import receiver
+from django.apps import apps
+
+class Status(models.Model):
+    status = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.status
+
+
+@receiver(post_migrate)
+def create_default_statuses(sender, **kwargs):
+    stat = apps.get_model('testapp', 'Status')
+    default_statuses = ['Бизнес', 'Личное', 'Налог']
+    for s in default_statuses:
+        stat.objects.get_or_create(status=s)
+
+class Type(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+@receiver(post_migrate)
+def create_default_types(sender, **kwargs):
+    typ = apps.get_model('testapp', 'Type')
+    for t in ['Пополнение', 'Списание']:
+        typ.objects.get_or_create(name=t)
+
+
+class Category(models.Model):
+    category = models.CharField(max_length=50, unique=True)
+    category_type = models.ForeignKey(Type, on_delete=models.PROTECT)
+
+    def __str__(self):
+        return self.category
+
+
+@receiver(post_migrate)
+def create_default_categories(sender, **kwargs):
+    typ = apps.get_model('testapp', 'Type')
+    categ = apps.get_model('testapp', 'Category')
+
+
+    categ.objects.get_or_create(category='Инфраструктура', defaults={'category_type': typ.objects.get(name='Пополнение')})
+    categ.objects.get_or_create(category='Маркетинг', defaults={'category_type': typ.objects.get(name='Списание')})
+
+
+class Subcategory(models.Model):
+    subcategory = models.CharField(max_length=50, unique=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.subcategory
+
+
+@receiver(post_migrate)
+def create_default_subcategories(sender, **kwargs):
+    sub = apps.get_model('testapp', 'Subcategory')
+    categ = apps.get_model('testapp', 'Category')
+
+    try:
+        infrastructure = categ.objects.get(category='Инфраструктура')
+        marketing = categ.objects.get(category='Маркетинг')
+    except categ.DoesNotExist:
+        return
+
+    for s in ['VPS', 'Proxy']:
+        sub.objects.get_or_create(subcategory=s, defaults={'category': infrastructure})
+
+    for s in ['Farpost', 'Avito']:
+        sub.objects.get_or_create(subcategory=s, defaults={'category': marketing})
+
+
+class Transaction(models.Model):
+    created_at = models.DateField(auto_now_add=True)
+    custom_date = models.DateField(null=True, blank=True, help_text="Изменить дату")
+    status = models.ForeignKey(Status, on_delete=models.PROTECT)
+    type = models.ForeignKey(Type, on_delete=models.PROTECT)
+    category = models.ForeignKey(Category, on_delete=models.PROTECT)
+    subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    comment = models.TextField(blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.custom_date:
+            self.created_at = self.custom_date
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.created_at} | {self.amount} ₽ | {self.type.name}'
+
+class Date(models.Model):
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    date = models.DateField()
+    def __str__(self):
+        return f"Дата транзакции: {self.transaction.created_at}"
+
+@receiver(post_save, sender=Transaction)
+def create_date_entry(sender, instance, created, **kwargs):
+    if created:
+        use_date = instance.custom_date if instance.custom_date else instance.created_at
+
+        Date.objects.create(
+            transaction=instance,
+            date=use_date
+        )
+

@@ -1,0 +1,23 @@
+from django.shortcuts import render
+from .models import Transaction, Category
+from .forms import TransactionFilterForm
+
+# Create your views here.
+def home_page(request):
+    form = TransactionFilterForm(request.GET or None)
+    transactions = Transaction.objects.all()
+
+    if form.is_valid():
+        sort_by = form.cleaned_data.get('sort_by')
+        if sort_by == 'type':
+            transactions = transactions.order_by('type__name')
+        elif sort_by == 'category':
+            transactions = transactions.order_by('category__category')
+        elif sort_by == 'date':
+            transactions = transactions.order_by('-created_at')
+
+    context = {
+        'transactions': transactions,
+        'form': form,
+    }
+    return render(request, 'home.html', context)

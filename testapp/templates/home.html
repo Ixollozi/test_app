@@ -1,0 +1,214 @@
+{% load static %}
+
+<div class="transaction-header">
+    <h2>Список транзакций</h2>
+
+    <div class="transaction-actions">
+        <a href="" class="btn">Создать запись</a>
+        <a href="" class="btn">Управление источниками</a>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="GET" action="" class="filter-form">
+        <div class="apply-sort">
+            <button type="submit" id="applySortBtn">Применить</button>
+        </div>
+        <div class="filter-group">
+            <button type="button" class="dropdown-btn">Сортировать ▼</button>
+            <div class="dropdown-content">
+                {{ form.sort_by }}
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="transaction-table-container">
+    <table class="transaction-table">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Сумма</th>
+                <th>Тип</th>
+                <th>Категория</th>
+                <th>Подкатегория</th>
+                <th>Статус</th>
+                <th>Комментарий</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in transactions %}
+                <tr>
+                    <td>{{ i.created_at|date:"d.m.Y" }}</td>
+                    <td class="amount {% if i.type.name == 'Списание' %}expense{% else %}income{% endif %}">
+                        {{ i.amount }} ₽
+                    </td>
+                    <td>{{ i.type }}</td>
+                    <td>{{ i.category }}</td>
+                    <td>{{ i.subcategory }}</td>
+                    <td>{{ i.status }}</td>
+                    <td>{{ i.comment|truncatechars:50 }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7" class="empty-message">Транзакции не найдены</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .transaction-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .transaction-header h2 {
+        margin: 0;
+    }
+
+    .transaction-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .transaction-actions .btn {
+        padding: 8px 16px;
+        background-color: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: background-color 0.3s ease;
+    }
+
+    .transaction-actions .btn:hover {
+        background-color: #2980b9;
+    }
+
+    .filter-bar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        align-items: center;
+    }
+
+    .filter-group {
+        position: relative;
+    }
+
+    .dropdown-btn {
+        padding: 8px 16px;
+        background-color: #ecf0f1;
+        color: #2c3e50;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 4px;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px rgba(0,0,0,0.1);
+        z-index: 1;
+        padding: 10px;
+        border-radius: 4px;
+    }
+
+    .dropdown-content label {
+        display: block;
+        margin: 5px 0;
+        font-size: 14px;
+        color: #2c3e50;
+    }
+
+    .dropdown-content input[type="radio"] {
+        margin-right: 5px;
+    }
+
+    .apply-sort button {
+        padding: 8px 16px;
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .apply-sort button:hover {
+        background-color: #27ae60;
+    }
+
+    .transaction-table-container {
+        margin: 20px 0;
+    }
+
+    .transaction-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    .transaction-table th,
+    .transaction-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .transaction-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+
+    .transaction-table tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    .transaction-table .amount {
+        font-weight: bold;
+        text-align: right;
+    }
+
+    .transaction-table .amount.expense {
+        color: #e74c3c;
+    }
+
+    .transaction-table .amount.income {
+        color: #2ecc71;
+    }
+
+    .transaction-table .empty-message {
+        text-align: center;
+        padding: 20px;
+        color: #888;
+    }
+</style>
+
+<script>
+    // JavaScript для управления выпадающим меню
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdownBtn = document.querySelector('.dropdown-btn');
+        const dropdownContent = document.querySelector('.dropdown-content');
+
+        if (dropdownBtn && dropdownContent) {
+            dropdownBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Закрытие выпадающего меню при клике вне его
+            document.addEventListener('click', function(event) {
+                if (!dropdownBtn.contains(event.target) && !dropdownContent.contains(event.target)) {
+                    dropdownContent.style.display = 'none';
+                }
+            });
+        }
+    });
+</script>
