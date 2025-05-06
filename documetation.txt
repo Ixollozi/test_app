@@ -1,0 +1,46 @@
+ Установка зависимостей
+Убедитесь, что у вас установлен Python 3.10+ (в моём случае — Python 3.12.8).
+
+Сoздайте и активируйте виртуальное oкружение:
+
+Windows:
+
+bash
+python -m venv venv
+venv\Scripts\activate
+
+macOS/Linux:
+
+bash
+python3 -m venv venv
+source venv/bin/activate
+Установите зависимости:
+Файл requirements.txt находится в корне проекта. Выполните:
+
+bash
+pip install -r requirements.txt
+
+
+2. Настройка базы данных
+По умолчанию используется SQLite (файл db.sqlite3).
+Выполните миграции (если база пустая или нужно обновить):
+
+bash
+python manage.py migrate
+Создайте суперпользователя (администратора):
+
+bash
+python manage.py createsuperuser
+
+
+3. Запуск веб-сервиса
+Для тестирования запустите сервер разработки:
+
+bash
+python manage.py runserver
+Проект будет доступен по адресу:
+http://127.0.0.1:8000
+
+
+Админка Django: /admin (после создания суперпользователя).
+Для отладки используйте кнопку "Отладка" в интерфейсе формы создания транзакций.

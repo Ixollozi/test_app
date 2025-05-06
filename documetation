@@ -1,9 +1,0 @@
-первым делом установим библиотеки
-pip install -r requirements.txt
-
-создадим супер юзера грубо говоря админа
-python manage.py createsuperuser
-
-затем запустим сервер
-python manage.py runserver
-
