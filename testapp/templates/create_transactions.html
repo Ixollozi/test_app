@@ -1,0 +1,193 @@
+{% load static %}
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма создания транзакции</title>
+    <link rel="stylesheet" href="{% static 'css/create_transactions.css' %}">
+    <style>
+        .hidden { display: none; }
+        .form-group { margin-bottom: 20px; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 15px; }
+        .radio-option { display: flex; align-items: center; }
+    </style>
+</head>
+<body>
+    <h2><a href="/">Список транзакций</a></h2>
+    <div class="container">
+        <h1>Создание новой транзакции</h1>
+
+        <form id="transactionForm" method="post">
+            {% csrf_token %}
+            <div class="form-title">Информация о транзакции</div>
+
+            <div class="form-group">
+                <label>Дата транзакции</label>
+                {{ form.custom_date }}
+            </div>
+
+            <div class="form-group">
+                <label>Сумма транзакции в ₽</label>
+                {{ form.amount }}
+            </div>
+
+            <div class="form-group">
+                <label>Тип транзакции</label>
+                <div class="radio-group" id="type-options">
+                    {{ form.type }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Категория транзакции</label>
+                <div class="radio-group" id="category-options">
+                    {{ form.category }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Подкатегория транзакции</label>
+                <div class="radio-group" id="subcategory-options">
+                    {{ form.subcategory }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Статус транзакции</label>
+                <div class="radio-group">
+                    {{ form.status }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Комментарий</label>
+                {{ form.comment }}
+            </div>
+
+            <button type="submit">Создать транзакцию</button>
+        </form>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Получаем данные из контекста Django
+        const typesData = JSON.parse('{{ types_json|safe }}');
+        const categoriesData = JSON.parse('{{ categories_json|safe }}');
+        const subcategoriesData = JSON.parse('{{ subcategories_json|safe }}');
+
+        // Получаем ссылки на контейнеры
+        const categoryOptions = document.getElementById('category-options');
+        const subcategoryOptions = document.getElementById('subcategory-options');
+
+        // Скрываем изначально поля категорий и подкатегорий
+        categoryOptions.classList.add('hidden');
+        subcategoryOptions.classList.add('hidden');
+
+        // Обработчик для выбора типа
+        document.querySelectorAll('input[name="type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const typeId = this.value;
+
+                // Очищаем и сбрасываем поля
+                resetCategoryField();
+                resetSubcategoryField();
+
+                // Если есть категории для этого типа
+                if (categoriesData[typeId]) {
+                    categoryOptions.classList.remove('hidden');
+                    updateCategoryOptions(typeId);
+                } else {
+                    categoryOptions.classList.add('hidden');
+                }
+            });
+        });
+
+        // Функция для обновления опций категорий
+        function updateCategoryOptions(typeId) {
+            // Очищаем текущие опции
+            while (categoryOptions.firstChild) {
+                categoryOptions.removeChild(categoryOptions.firstChild);
+            }
+
+            // Добавляем новые опции
+            const typeCategories = categoriesData[typeId];
+            Object.keys(typeCategories).forEach(categoryId => {
+                const label = document.createElement('label');
+                label.className = 'radio-option';
+
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'category';
+                radio.value = categoryId;
+                radio.className = 'category-radio';
+
+                radio.addEventListener('change', function() {
+                    updateSubcategoryOptions(categoryId);
+                });
+
+                label.appendChild(radio);
+                label.appendChild(document.createTextNode(' ' + typeCategories[categoryId]));
+
+                categoryOptions.appendChild(label);
+            });
+        }
+
+        // Функция для обновления опций подкатегорий
+        function updateSubcategoryOptions(categoryId) {
+            // Сбрасываем поле подкатегорий
+            resetSubcategoryField();
+
+            // Проверяем наличие подкатегорий для этой категории
+            if (subcategoriesData[categoryId]) {
+                subcategoryOptions.classList.remove('hidden');
+
+                // Добавляем опции подкатегорий
+                const categorySubcategories = subcategoriesData[categoryId];
+                Object.keys(categorySubcategories).forEach(subcategoryId => {
+                    const label = document.createElement('label');
+                    label.className = 'radio-option';
+
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'subcategory';
+                    radio.value = subcategoryId;
+
+                    label.appendChild(radio);
+                    label.appendChild(document.createTextNode(' ' + categorySubcategories[subcategoryId]));
+
+                    subcategoryOptions.appendChild(label);
+                });
+            }
+        }
+
+        // Функции для сброса полей
+        function resetCategoryField() {
+            while (categoryOptions.firstChild) {
+                categoryOptions.removeChild(categoryOptions.firstChild);
+            }
+            resetSubcategoryField();
+        }
+
+        function resetSubcategoryField() {
+            subcategoryOptions.classList.add('hidden');
+            while (subcategoryOptions.firstChild) {
+                subcategoryOptions.removeChild(subcategoryOptions.firstChild);
+            }
+        }
+
+        // Инициализация: если тип уже выбран при загрузке
+        const selectedType = document.querySelector('input[name="type"]:checked');
+        if (selectedType) {
+            selectedType.dispatchEvent(new Event('change'));
+
+            // Если категория также выбрана
+            const selectedCategory = document.querySelector('input[name="category"]:checked');
+            if (selectedCategory) {
+                selectedCategory.dispatchEvent(new Event('change'));
+            }
+        }
+    });
+    </script>
+</body>
+</html>
