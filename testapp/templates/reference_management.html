@@ -1,0 +1,709 @@
+{% load static %}
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление справочниками</title>
+    <link rel="stylesheet" href="{% static 'css/create_transactions.css' %}">
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .reference-section {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+
+        .reference-section h2 {
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .item-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .item-card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            background: white;
+        }
+
+        .item-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .item-card .actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+            border: none;
+        }
+
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        .btn-danger { background-color: #dc3545; color: white; }
+
+        .form-section {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        .alert {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .dependent-item {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%;
+            max-width: 500px;
+            border-radius: 5px;
+        }
+
+        .close {
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .nav-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .nav-link {
+            padding: 10px 15px;
+            text-decoration: none;
+            color: #495057;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .nav-link.active {
+            background-color: #007bff;
+            color: white;
+            border: 1px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Управление справочниками</h1>
+
+        <div class="nav-tabs">
+            <a href="#types" class="nav-link active" onclick="showTab('types')">Типы</a>
+            <a href="#statuses" class="nav-link" onclick="showTab('statuses')">Статусы</a>
+            <a href="#categories" class="nav-link" onclick="showTab('categories')">Категории</a>
+            <a href="#subcategories" class="nav-link" onclick="showTab('subcategories')">Подкатегории</a>
+        </div>
+
+<!--        <nav>-->
+            <a href="/" class="btn btn-primary">Вернуться к транзакциям</a>
+<!--        </nav>-->
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Управление типами -->
+        <div id="types" class="reference-section tab-content">
+            <h2>Типы транзакций</h2>
+
+            <div class="item-list">
+                {% for type in types %}
+                    <div class="item-card">
+                        <h4>{{ type.name }}</h4>
+                        <div class="dependent-item">
+                            Связанные категории: {{ type.category_set.count }}
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-warning" onclick="editType({{ type.id }}, '{{ type.name }}')">
+                                ✏️
+                            </button>
+                            <form action="{% url 'type_delete' type.id %}" method="post"
+                                  onsubmit="return confirm('Удалить этот тип?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>Нет доступных типов</p>
+                {% endfor %}
+            </div>
+
+            <div class="form-section">
+                <h3>Добавить новый тип</h3>
+                <form action="{% url 'type_create' %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_name">Название:</label>
+                        {{ type_form.name }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Управление статусами -->
+        <div id="statuses" class="reference-section tab-content" style="display:none">
+            <h2>Статусы транзакций</h2>
+
+            <div class="item-list">
+                {% for status in statuses %}
+                    <div class="item-card">
+                        <h4>{{ status.status }}</h4>
+                        <div class="dependent-item">
+                            Связанные транзакции: {{ status.transaction_set.count }}
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-warning" onclick="editStatus({{ status.id }}, '{{ status.status }}')">
+                                ✏️
+                            </button>
+                            <form action="{% url 'status_delete' status.id %}" method="post"
+                                  onsubmit="return confirm('Удалить этот статус?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>Нет доступных статусов</p>
+                {% endfor %}
+            </div>
+
+            <div class="form-section">
+                <h3>Добавить новый статус</h3>
+                <form action="{% url 'status_create' %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_status">Название:</label>
+                        {{ status_form.status }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Управление категориями -->
+        <div id="categories" class="reference-section tab-content" style="display:none">
+            <h2>Категории транзакций</h2>
+
+            <div class="item-list">
+                {% for category in categories %}
+                    <div class="item-card">
+                        <h4>{{ category.category }}</h4>
+                        <div class="dependent-item">
+                            Тип: {{ category.category_type.name }}
+                        </div>
+                        <div class="dependent-item">
+                            Подкатегорий: {{ category.subcategory_set.count }}
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-warning"
+                                    onclick="editCategory({{ category.id }}, '{{ category.category }}', {{ category.category_type.id }})">
+                                ✏️
+                            </button>
+                            <form action="{% url 'category_delete' category.id %}" method="post"
+                                  onsubmit="return confirm('Удалить эту категорию?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>Нет доступных категорий</p>
+                {% endfor %}
+            </div>
+
+            <div class="form-section">
+                <h3>Добавить новую категорию</h3>
+                <form action="{% url 'category_create' %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_category">Название:</label>
+                        {{ category_form.category }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_category_type">Тип:</label>
+                        {{ category_form.category_type }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Управление подкатегориями -->
+        <div id="subcategories" class="reference-section tab-content" style="display:none">
+            <h2>Подкатегории транзакций</h2>
+
+            <div class="item-list">
+                {% for subcategory in subcategories %}
+                    <div class="item-card">
+                        <h4>{{ subcategory.subcategory }}</h4>
+                        <div class="dependent-item">
+                            Категория: {{ subcategory.category.category }}
+                        </div>
+                        <div class="dependent-item">
+                            Тип: {{ subcategory.category.category_type.name }}
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-warning"
+                                    onclick="editSubcategory({{ subcategory.id }}, '{{ subcategory.subcategory }}', {{ subcategory.category.id }})">
+                                ✏️
+                            </button>
+                            <form action="{% url 'subcategory_delete' subcategory.id %}" method="post"
+                                  onsubmit="return confirm('Удалить эту подкатегорию?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">🗑️</button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>Нет доступных подкатегорий</p>
+                {% endfor %}
+            </div>
+
+            <div class="form-section">
+                <h3>Добавить новую подкатегорию</h3>
+                <form action="{% url 'subcategory_create' %}" method="post">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_subcategory">Название:</label>
+                        {{ subcategory_form.subcategory }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_category">Категория:</label>
+                        {{ subcategory_form.category }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна для редактирования -->
+    <div id="editTypeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editTypeModal')">&times;</span>
+            <h3>Редактировать тип</h3>
+            <form id="editTypeForm" action="" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="edit_type_name">Название:</label>
+                    <input type="text" id="edit_type_name" name="name" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editStatusModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editStatusModal')">&times;</span>
+            <h3>Редактировать статус</h3>
+            <form id="editStatusForm" action="" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="edit_status_name">Название:</label>
+                    <input type="text" id="edit_status_name" name="status" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editCategoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editCategoryModal')">&times;</span>
+            <h3>Редактировать категорию</h3>
+            <form id="editCategoryForm" action="" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="edit_category_name">Название:</label>
+                    <input type="text" id="edit_category_name" name="category" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_category_type">Тип:</label>
+                    <select id="edit_category_type" name="category_type" class="form-control" required>
+                        {% for type in types %}
+                            <option value="{{ type.id }}">{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editSubcategoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editSubcategoryModal')">&times;</span>
+            <h3>Редактировать подкатегорию</h3>
+            <form id="editSubcategoryForm" action="" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="edit_subcategory_name">Название:</label>
+                    <input type="text" id="edit_subcategory_name" name="subcategory" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_subcategory_category">Категория:</label>
+                    <select id="edit_subcategory_category" name="category" class="form-control" required>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.category }} ({{ category.category_type.name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Функция для отображения вкладок
+        function showTab(tabId) {
+            // Скрыть все контенты вкладок
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => tab.style.display = 'none');
+
+            // Показать выбранную вкладку
+            document.getElementById(tabId).style.display = 'block';
+
+            // Обновить активный класс на вкладках
+            const tabLinks = document.querySelectorAll('.nav-link');
+            tabLinks.forEach(link => link.classList.remove('active'));
+
+            // Найти активную вкладку и добавить класс active
+            const activeLink = document.querySelector(`.nav-link[href="#${tabId}"]`);
+            if (activeLink) activeLink.classList.add('active');
+        }
+
+        // Функции для модальных окон редактирования
+        function editType(id, name) {
+            document.getElementById('edit_type_name').value = name;
+            document.getElementById('editTypeForm').action = `/type/${id}/update/`;
+            document.getElementById('editTypeModal').style.display = 'block';
+        }
+
+        function editStatus(id, status) {
+            document.getElementById('edit_status_name').value = status;
+            document.getElementById('editStatusForm').action = `/status/${id}/update/`;
+            document.getElementById('editStatusModal').style.display = 'block';
+        }
+
+        function editCategory(id, name, typeId) {
+            document.getElementById('edit_category_name').value = name;
+            document.getElementById('edit_category_type').value = typeId;
+            document.getElementById('editCategoryForm').action = `/category/${id}/update/`;
+            document.getElementById('editCategoryModal').style.display = 'block';
+        }
+
+        function editSubcategory(id, name, categoryId) {
+            document.getElementById('edit_subcategory_name').value = name;
+            document.getElementById('edit_subcategory_category').value = categoryId;
+            document.getElementById('editSubcategoryForm').action = `/subcategory/${id}/update/`;
+            document.getElementById('editSubcategoryModal').style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Закрытие модального окна при клике вне его содержимого
+        window.onclick = function(event) {
+            const modals = document.getElementsByClassName('modal');
+            for (let i = 0; i < modals.length; i++) {
+                if (event.target == modals[i]) {
+                    modals[i].style.display = 'none';
+                }
+            }
+        }
+
+        // Добавление зависимости между типами и категориями в форме подкатегорий
+        document.addEventListener('DOMContentLoaded', function() {
+            const categorySelect = document.getElementById('id_category');
+            if (categorySelect) {
+                categorySelect.addEventListener('change', function() {
+                    // Здесь можно добавить AJAX для динамической подгрузки подкатегорий
+                });
+            }
+        });
+    </script>
+    <script>// Функция для загрузки категорий на основе выбранного типа
+function loadCategoriesForType(typeId, targetElement) {
+    fetch(`/get_categories_for_management/?type_id=${typeId}`)
+        .then(response => response.json())
+        .then(data => {
+            // Очистить существующие опции
+            targetElement.innerHTML = '';
+
+            // Добавить новые опции
+            data.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                targetElement.appendChild(option);
+            });
+
+            // Если есть категории, вызвать событие изменения для загрузки подкатегорий
+            if (data.length > 0) {
+                targetElement.value = data[0].id;
+                const event = new Event('change');
+                targetElement.dispatchEvent(event);
+            }
+        })
+        .catch(error => console.error('Ошибка при загрузке категорий:', error));
+}
+
+// Функция для загрузки подкатегорий на основе выбранной категории
+function loadSubcategoriesForCategory(categoryId, targetElement) {
+    fetch(`/get_subcategories/?category_id=${categoryId}`)
+        .then(response => response.json())
+        .then(data => {
+            // Очистить существующие опции
+            targetElement.innerHTML = '';
+
+            // Добавить новые опции
+            data.forEach(subcategory => {
+                const option = document.createElement('option');
+                option.value = subcategory.id;
+                option.textContent = subcategory.name;
+                targetElement.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Ошибка при загрузке подкатегорий:', error));
+}
+
+// Инициализация зависимостей между селектами при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Для основной формы добавления
+    const typeSelect = document.getElementById('id_category_type');
+    const categorySelect = document.getElementById('id_category');
+
+    if (typeSelect && categorySelect) {
+        typeSelect.addEventListener('change', function() {
+            loadCategoriesForType(this.value, categorySelect);
+        });
+    }
+
+    // Для модальных окон
+    const editTypeSelect = document.getElementById('edit_category_type');
+    const editCategorySelect = document.getElementById('edit_subcategory_category');
+
+    if (editTypeSelect) {
+        editTypeSelect.addEventListener('change', function() {
+            // Добавьте логику загрузки категорий в модальном окне
+        });
+    }
+
+    // Добавление функциональности поиска и фильтрации
+    const searchInput = document.getElementById('searchReference');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchText = this.value.toLowerCase();
+            const activeTabId = document.querySelector('.nav-link.active').getAttribute('href').substring(1);
+            const items = document.querySelectorAll(`#${activeTabId} .item-card`);
+
+            items.forEach(item => {
+                const itemText = item.textContent.toLowerCase();
+                if (itemText.includes(searchText)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Сохранение активной вкладки при обновлении страницы
+    const activeTab = localStorage.getItem('activeReferenceTab');
+    if (activeTab) {
+        showTab(activeTab);
+    }
+
+    // Обработчики для запоминания активной вкладки
+    const tabLinks = document.querySelectorAll('.nav-link');
+    tabLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            const tabId = this.getAttribute('href').substring(1);
+            localStorage.setItem('activeReferenceTab', tabId);
+        });
+    });
+});
+
+// Улучшенные функции для модальных окон
+function editItem(modalId, formId, actionUrl, data) {
+    // Заполнить форму данными
+    for (const [key, value] of Object.entries(data)) {
+        const input = document.getElementById(`${formId}_${key}`);
+        if (input) {
+            input.value = value;
+        }
+    }
+
+    // Установить URL действия формы
+    document.getElementById(formId).action = actionUrl;
+
+    // Показать модальное окно
+    document.getElementById(modalId).style.display = 'block';
+}
+
+// Переиспользуемая функция редактирования для всех типов элементов
+function editType(id, name) {
+    editItem('editTypeModal', 'editTypeForm', `/type/${id}/update/`, {name});
+}
+
+function editStatus(id, status) {
+    editItem('editStatusModal', 'editStatusForm', `/status/${id}/update/`, {name: status});
+}
+
+function editCategory(id, name, typeId) {
+    editItem('editCategoryModal', 'editCategoryForm', `/category/${id}/update/`, {
+        name,
+        type: typeId
+    });
+}
+
+function editSubcategory(id, name, categoryId) {
+    editItem('editSubcategoryModal', 'editSubcategoryForm', `/subcategory/${id}/update/`, {
+        name,
+        category: categoryId
+    });
+}
+
+// Функция для добавления элемента без перезагрузки страницы (AJAX)
+function submitFormAjax(formId, successCallback) {
+    const form = document.getElementById(formId);
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Показать уведомление об успехе
+            showNotification(data.message, 'success');
+
+            // Очистить форму
+            form.reset();
+
+            // Вызвать коллбэк для обновления UI
+            if (successCallback) {
+                successCallback(data);
+            }
+        } else {
+            // Показать уведомление об ошибке
+            showNotification(data.message || 'Произошла ошибка', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Произошла ошибка при отправке формы', 'error');
+    });
+
+    return false; // Предотвратить отправку формы
+}
+
+// Функция для отображения уведомлений
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'}`;
+    notification.textContent = message;
+
+    // Добавить уведомление в контейнер
+    const container = document.querySelector('.container');
+    container.insertBefore(notification, container.firstChild);
+
+    // Автоматически скрыть уведомление через 5 секунд
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 500);
+    }, 5000);
+}</script>
+</body>
+</html>
